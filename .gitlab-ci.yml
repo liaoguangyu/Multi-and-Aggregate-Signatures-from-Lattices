@@ -1,0 +1,114 @@
+# Global Definitions
+
+stages:
+  - build
+  - build_downstream
+  - test
+
+variables:
+  INSTALL_DIR: PALISADE_local_install
+
+# Build jobs
+
+build_signature:
+  except:
+    variables:
+      - $UPSTREAM_BRANCH_REF
+  stage: build
+  before_script:
+    - if [[ ${COMPILER^^} == "CLANG" ]]; then TARG_CC=/usr/bin/clang-9; TARG_CXX=/usr/bin/clang++-9;else export TARG_CC=gcc-7; export TARG_CXX=g++-7; fi
+    - git clone https://gitlab.com/palisade/palisade-development.git PALISADE
+    - cd PALISADE
+    - mkdir -p build
+    - cd build
+    - mkdir -p ../../$INSTALL_DIR
+    - CC=${TARG_CC} CXX=${TARG_CXX} cmake -DCMAKE_INSTALL_PREFIX=../../$INSTALL_DIR -DBUILD_UNITTESTS=OFF -DBUILD_BENCHMARKS=OFF -DBUILD_EXTRAS=OFF -DBUILD_EXAMPLES=OFF ..
+    - make install -j10
+    - cat ../../$INSTALL_DIR/lib/Palisade/PalisadeConfig.cmake
+    - ls ../../$INSTALL_DIR/lib
+    - ls ../../$INSTALL_DIR/lib/Palisade
+    - cd ../..
+    - rm -rf PALISADE
+  script:
+    - pwd
+    - echo $LD_LIBRARY_PATH
+    - mkdir -p build
+    - cd build
+    - CC=${TARG_CC} CXX=${TARG_CXX} cmake -DCMAKE_PREFIX_PATH=$(realpath ../${INSTALL_DIR}) ..
+    - make -j10
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - build
+      - $INSTALL_DIR
+
+build_signature_downstream:
+  only:
+    variables:
+      - $UPSTREAM_BRANCH_REF
+  stage: build_downstream
+  before_script:
+    - if [[ ${COMPILER^^} == "CLANG" ]]; then TARG_CC=/usr/bin/clang-9; TARG_CXX=/usr/bin/clang++-9;else export TARG_CC=gcc-7; export TARG_CXX=g++-7; fi
+    - git clone --single-branch --branch $UPSTREAM_BRANCH_REF https://gitlab.com/palisade/palisade-development.git PALISADE
+    - cd PALISADE
+    - mkdir -p build
+    - cd build
+    - mkdir -p ../../$INSTALL_DIR
+    - CC=${TARG_CC} CXX=${TARG_CXX} cmake -DCMAKE_INSTALL_PREFIX=../../$INSTALL_DIR -DBUILD_UNITTESTS=OFF -DBUILD_BENCHMARKS=OFF -DBUILD_EXTRAS=OFF -DBUILD_EXAMPLES=OFF ..
+    - make install -j10
+    - cat ../../$INSTALL_DIR/lib/Palisade/PalisadeConfig.cmake
+    - ls ../../$INSTALL_DIR/lib
+    - ls ../../$INSTALL_DIR/lib/Palisade
+    - cd ../..
+    - rm -rf PALISADE
+  script:
+    - pwd
+    - echo $LD_LIBRARY_PATH
+    - mkdir -p build
+    - cd build
+    - CC=${TARG_CC} CXX=${TARG_CXX} cmake -DCMAKE_PREFIX_PATH=$(realpath ../${INSTALL_DIR}) ..
+    - make -j10
+  needs:
+    - project: palisade/palisade-development
+      job: define_vars
+      ref: $UPSTREAM_BRANCH_REF
+      artifacts: true
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - build
+      - $INSTALL_DIR
+
+# Test jobs
+
+test_signature:
+  stage: test
+  except:
+    variables:
+      - $UPSTREAM_BRANCH_REF
+  before_script:
+    - export LD_LIBRARY_PATH=$(pwd)/build/lib:$(pwd)/${INSTALL_DIR}/lib
+  script:
+    - ./build/unittest/signature_tests --gtest_output=xml
+  artifacts:
+    paths:
+      - test_detail.xml
+    expire_in: 1 hours
+  dependencies:
+    - build_signature
+
+test_signature_downstream:
+  stage: test
+  only:
+    variables:
+      - $UPSTREAM_BRANCH_REF
+  before_script:
+    - export LD_LIBRARY_PATH=$(pwd)/build/lib:$(pwd)/${INSTALL_DIR}/lib
+  script:
+    - ./build/unittest/signature_tests --gtest_output=xml
+  artifacts:
+    paths:
+      - test_detail.xml
+    expire_in: 1 hours
+  dependencies:
+    - build_signature_downstream
