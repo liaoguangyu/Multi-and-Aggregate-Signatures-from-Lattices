@@ -104,6 +104,11 @@ class SignatureContext {
               const LPSignature<Element>& signature,
               const LPVerificationKey<Element>& vk);
 
+  bool VerifyMulti(const LPSignPlaintext<Element>& pt,
+                   const LPSignature<Element>& signature,
+                   const LPVerificationKey<Element>& vk,
+                   const Matrix<Element>& weight);
+
   shared_ptr<LPSignatureParameters<Element>> m_params;
 
  private:

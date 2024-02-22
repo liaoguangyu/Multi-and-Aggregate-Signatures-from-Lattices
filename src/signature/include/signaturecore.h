@@ -212,6 +212,12 @@ class LPSignatureScheme {
                       const LPVerificationKey<Element> &vk,
                       const LPSignature<Element> &sign,
                       const LPSignPlaintext<Element> &pt);
+
+    virtual bool VerifyMulti(shared_ptr<LPSignatureParameters<Element>> m_params,
+                        const LPVerificationKey<Element> &vk,
+                        const LPSignature<Element> &sign,
+                        const LPSignPlaintext<Element> &pt,
+                        const Matrix<Element> &weight);
   /*
    * @brief Dummy method to force abstract base class
    */

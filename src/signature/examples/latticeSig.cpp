@@ -69,9 +69,12 @@ int main() {
     Matrix<Poly> omega_all(zero_alloc, 5, 5, uniform_alloc);
     //std::cout << omega_all.GetData() << std::endl;
     //
-    Sigma_1_Matrix.ScalarMult(omega_all(1,1));
-    Sigma_2_Matrix.ScalarMult(omega_all(2,2));
-    Matrix<Poly> Sigma_1_Alpha = Sigma_1_Matrix.Add(Sigma_2_Matrix);
+    Matrix<Poly> s1 = Sigma_1_Matrix.ScalarMult(omega_all(1,1));
+    Matrix<Poly> s2 = Sigma_2_Matrix.ScalarMult(omega_all(2,2));
+    Matrix<Poly> Sigma_Alpha_Matrix = s1.Add(s2);
+    GPVSignature<Poly> Sigma_Alpha;
+    Sigma_Alpha.SetSignature(std::make_shared<Matrix<Poly>>(Sigma_Alpha_Matrix));
+
 
 //    std::cout << Sigma_1_Alpha.GetRows() << std::endl;
 //    std::cout << Sigma_1_Alpha.GetCols() << std::endl;
@@ -79,10 +82,11 @@ int main() {
     // std::cout << SigmaIMatrix.GetData() << std::endl;
 
     // verify
-    bool result = context.Verify(plaintext, Sigma_1, A);
-    bool result2 = context.Verify(plaintext, Sigma_2, A);
+//    bool result = context.Verify(plaintext, Sigma_1, A);
+//    bool result2 = context.Verify(plaintext, Sigma_2, A);
+    bool result = context.VerifyMulti(plaintext, Sigma_Alpha, A, omega_all);
 
-    std::cout << result << result2<< std::endl;
+    std::cout << result << std::endl;
 
 
 

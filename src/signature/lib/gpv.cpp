@@ -311,5 +311,84 @@ bool GPVSignatureScheme<Element>::Verify(
   return signatureCheck;
 }
 
+
+// Method for verifying given object & signature
+template <class Element>
+bool GPVSignatureScheme<Element>::VerifyMulti(
+        shared_ptr<LPSignatureParameters<Element>> sparams,
+        const LPVerificationKey<Element> &vk, const LPSignature<Element> &sign,
+        const LPSignPlaintext<Element> &pt, const Matrix<Element> &weight) {
+        auto m_params =
+                std::static_pointer_cast<GPVSignatureParameters<Element>>(sparams);
+        const auto &verificationKey =
+                static_cast<const GPVVerificationKey<Element> &>(vk);
+        const auto &plainText = static_cast<const GPVPlaintext<Element> &>(pt);
+        const auto &signatureText = static_cast<const GPVSignature<Element> &>(sign);
+        size_t n = m_params->GetILParams()->GetRingDimension();
+
+        size_t k = m_params->GetK();
+        size_t base = m_params->GetBase();
+        bool VerifyNorm = m_params->GetVerifyNormFlag();
+
+
+        EncodingParams ep(
+                std::make_shared<EncodingParamsImpl>(PlaintextModulus(512)));
+
+        // Encode the text into a vector so it can be used in signing process. TODO:
+        // Adding some kind of digestion algorithm
+        vector<int64_t> digest;
+        Plaintext hashedText;
+        HashUtil::Hash(plainText.GetPlaintext(), SHA_256, digest);
+
+        if (plainText.GetPlaintext().size() <= n) {
+            for (size_t i = 0; i < n - 32; i = i + 4) digest.push_back(seed[i]);
+        }
+
+        hashedText =
+                std::make_shared<CoefPackedEncoding>(m_params->GetILParams(), ep, digest);
+        hashedText->Encode();
+
+        Element &u = hashedText->GetElement<Element>();
+        u.SwitchFormat();
+
+        Element u_weight = u * (weight(1,1) + weight(2,2));
+        //u_weight.SwitchFormat();
+        //std::cout << u_weight << std::endl;
+
+
+        // Multiply signature with the verification key
+        const Matrix<Element> &A = verificationKey.GetVerificationKey();
+        Matrix<Element> z = signatureText.GetSignature();
+        //std::cout << (A * z)(0, 0) << std::endl;
+
+        // Check the verified vector is actually the encoding of the object
+        bool signatureCheck = (u_weight == (A * z)(0, 0));
+
+        if (VerifyNorm == true) {
+
+            //expected bound on the signature
+            //spectral_bound,
+            double s = SPECTRAL_BOUND(n, k+2, base);
+
+            //k (m in paper)
+            double inf_sign_bound = s;
+            double euc_sign_bound = sqrt(n*(k+2))*s;
+
+            //compute euclidean norm of signature and check that it is less than the expected bound
+            z.SetFormat(Format::COEFFICIENT);
+            double z_inf_norm = z.Norm();
+            double z_euc_norm = z.EuclideanNorm();
+
+            if (z_inf_norm > 5*inf_sign_bound || (z_euc_norm > euc_sign_bound))
+            {
+                //PALISADE_THROW(math_error, "Signature norm is larger than the expected bounds");
+            }
+
+        }
+
+        return signatureCheck;
+    }
+
+
 }  // namespace lbcrypto
 #endif

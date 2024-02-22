@@ -413,6 +413,13 @@ class GPVSignatureScheme : public LPSignatureScheme<Element> {
               const LPSignature<Element>& sign,
               const LPSignPlaintext<Element>& pt);
 
+
+  bool VerifyMulti(shared_ptr<LPSignatureParameters<Element>> m_params,
+              const LPVerificationKey<Element>& vk,
+              const LPSignature<Element>& sign,
+              const LPSignPlaintext<Element>& pt,
+              const Matrix<Element> &weight);
+
   /**
    *
    *Method for generating signing and verification keys

@@ -116,4 +116,13 @@ bool SignatureContext<Element>::Verify(const LPSignPlaintext<Element>& pt,
                                        const LPVerificationKey<Element>& vk) {
   return m_scheme->Verify(m_params, vk, signature, pt);
 }
+
+// Method for verifying the plaintext and signature
+template <class Element>
+bool SignatureContext<Element>::VerifyMulti(const LPSignPlaintext<Element>& pt,
+                                            const LPSignature<Element>& signature,
+                                            const LPVerificationKey<Element>& vk,
+                                            const Matrix<Element>& weight) {
+    return m_scheme->VerifyMulti(m_params, vk, signature, pt, weight);
+}
 }  // namespace lbcrypto
