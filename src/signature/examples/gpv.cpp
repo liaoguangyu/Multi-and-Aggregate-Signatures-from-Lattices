@@ -59,6 +59,8 @@ int main() {
     GPVSignature<Poly> signature;
     std::cout << "Signing first plaintext" << std::endl;
     TIC(t1);
+    //std::cout << vk.GetVerificationKey().GetData()[0][1] << std::endl;
+    //std::cout << static_cast<const GPVVerificationKey<Element> &>(vk) << std::endl;
     context.Sign(plaintext, sk, vk, &signature);
     duration = TOC(t1);
     std::cout << "Signing: " << duration << " ms" << std::endl << std::endl;

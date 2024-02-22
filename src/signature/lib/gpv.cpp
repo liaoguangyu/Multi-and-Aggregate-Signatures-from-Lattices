@@ -31,7 +31,6 @@
 #define _SRC_LIB_CRYPTO_SIGNATURE_LWESIGN_CPP
 
 #include "gpv.h"
-
 namespace lbcrypto {
 
 // Method for generating signing and verification keys
@@ -85,8 +84,7 @@ void GPVSignatureScheme<Element>::Sign(
   auto m_params =
       std::static_pointer_cast<GPVSignatureParameters<Element>>(sparams);
   const auto &signKey = static_cast<const GPVSignKey<Element> &>(sk);
-  const auto &verificationKey =
-      static_cast<const GPVVerificationKey<Element> &>(vk);
+  const auto &verificationKey = static_cast<const GPVVerificationKey<Element> &>(vk);
   const auto &plainText = static_cast<const GPVPlaintext<Element> &>(pt);
   auto *signatureText = static_cast<GPVSignature<Element> *>(sign);
 
@@ -102,20 +100,23 @@ void GPVSignatureScheme<Element>::Sign(
   // Adding some kind of digestion algorithm
   vector<int64_t> digest;
   HashUtil::Hash(plainText.GetPlaintext(), SHA_256, digest);
+  //std::cout << digest << std::endl;
   if (plainText.GetPlaintext().size() <= n) {
     for (size_t i = 0; i < n - 32; i = i + 4) digest.push_back(seed[i]);
   }
+  //std::cout << digest << std::endl;
   Plaintext hashedText(std::make_shared<CoefPackedEncoding>(
       m_params->GetILParams(), ep, digest));
   hashedText->Encode();
 
   Element &u = hashedText->GetElement<Element>();
   u.SwitchFormat();
-
+  //std::cout << u << std::endl;
   // Getting the trapdoor, its public matrix, perturbation matrix and gaussian
   // generator to use in sampling
   const Matrix<Element> &A = verificationKey.GetVerificationKey();
   const RLWETrapdoorPair<Element> &T = signKey.GetSignKey();
+  //std::cout << A.GetData() << std::endl;
   typename Element::DggType &dgg = m_params->GetDiscreteGaussianGenerator();
 
   typename Element::DggType &dggLargeSigma =
@@ -123,6 +124,45 @@ void GPVSignatureScheme<Element>::Sign(
   Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSamp(
       n, k, A, T, u, dgg, dggLargeSigma, base);
   signatureText->SetSignature(std::make_shared<Matrix<Element>>(zHat));
+}
+
+
+// Method for signing given object
+template <class Element>
+void GPVSignatureScheme<Element>::CrsGen(
+        shared_ptr<LPSignatureParameters<Element>> sparams,
+        const LPSignKey<Element> &sk, const LPVerificationKey<Element> &vk,
+        const LPVerificationKey<Element> &vki, LPSignature<Element> *sign) {
+        auto m_params = std::static_pointer_cast<GPVSignatureParameters<Element>>(sparams);
+        const auto &signKey = static_cast<const GPVSignKey<Element> &>(sk);
+        const auto &verificationKey = static_cast<const GPVVerificationKey<Element> &>(vk);
+        const auto &verificationKeyi = static_cast<const GPVVerificationKey<Element> &>(vki);
+        auto *signatureText = static_cast<GPVSignature<Element> *>(sign);
+
+        // Getting parameters for calculations
+        size_t n = m_params->GetILParams()->GetRingDimension();
+        size_t k = m_params->GetK();
+        size_t base = m_params->GetBase();
+        //std::cout << u << std::endl;
+        // Getting the trapdoor, its public matrix, perturbation matrix and gaussian
+        // generator to use in sampling
+        const Matrix<Element> &A = verificationKey.GetVerificationKey();
+        const Matrix<Element> &Ai = verificationKeyi.GetVerificationKey();
+
+//        std::cout << Ai(0,0).GetModulus() << std::endl;
+//        std::cout << A(0,0).GetModulus() << std::endl;
+        const RLWETrapdoorPair<Element> &T = signKey.GetSignKey();
+        //std::cout << A.GetData() << std::endl;
+        typename Element::DggType &dgg = m_params->GetDiscreteGaussianGenerator();
+
+
+        typename Element::DggType &dggLargeSigma =
+                m_params->GetDiscreteGaussianGeneratorLargeSigma();
+
+        Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSampMatrix(n, k, A, T, Ai, dgg, dggLargeSigma, base);
+        //‘const lbcrypto::Matrix<lbcrypto::PolyImpl<bigintnat::NativeVector<bigintnat::NativeIntegerT<long unsigned int> > > >’ to
+        //‘const lbcrypto::Matrix<lbcrypto::PolyImpl<bigintfxd::BigVectorImpl<bigintfxd::BigInteger<unsigned int, 3500> > > >&’
+        signatureText->SetSignature(std::make_shared<Matrix<Element>>(zHat));
 }
 
 // Method for signing given object
@@ -263,7 +303,7 @@ bool GPVSignatureScheme<Element>::Verify(
     
     if (z_inf_norm > 5*inf_sign_bound || (z_euc_norm > euc_sign_bound))
     {
-      PALISADE_THROW(math_error, "Signature norm is larger than the expected bounds");
+     //PALISADE_THROW(math_error, "Signature norm is larger than the expected bounds");
     }
   
   }

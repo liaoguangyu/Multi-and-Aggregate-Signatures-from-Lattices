@@ -28,7 +28,7 @@ install(
 	DIRECTORY include/
 	DESTINATION include/palisade-signature)
 
-set (SIGNATURELIBS PUBLIC PALISADEsignature ${PALISADE_LIBRARIES})
+set (SIGNATURELIBS PUBLIC PALISADEsignature PALISADEcore ${PALISADE_LIBRARIES})
 
 target_link_libraries (PALISADEsignature ${PALISADE_LIBRARIES})
 

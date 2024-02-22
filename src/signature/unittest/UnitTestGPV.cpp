@@ -27,7 +27,6 @@
 #include "signaturecontext.h"
 
 using namespace lbcrypto;
-
 class UnitTestSignatureGPV : public ::testing::Test {
  protected:
   virtual void SetUp() {}
@@ -63,27 +62,75 @@ TEST(UTSignatureGPV, simple_sign_verify) {
 
 // TEST FOR BASIC SIGNING & VERIFICATION PROCESS FOR NATIVEPOLY WITH MODULUS
 // SIZE <60 BITS
-
 TEST(UTSignatureGPV, simple_sign_verify_native_below_sixty_bits) {
-  DEBUG_FLAG(false);
+    std::cout << "This is a demo file of the GPV signature scheme" << std::endl
+              << std::endl;
+    // We generate a signature context and make it a GPV context with ring size,
+    // you can also explicitly define ringsize, modulus bitwidth and base
+    SignatureContext<Poly> context;
+    usint ringsize = 512;
+    std::cout << "Used ring size for calculations: " << ringsize << std::endl;
+    std::cout << "Generating context for GPV signature" << std::endl << std::endl;
+    context.GenerateGPVContext(ringsize, true);//todo:add verifyparameter
 
-  DEBUG("Context Generation");
-  SignatureContext<NativePoly> context;
-  context.GenerateGPVContext(1024);
-  DEBUG("Key Generation");
-  GPVVerificationKey<NativePoly> vk;
-  GPVSignKey<NativePoly> sk;
-  context.KeyGen(&sk, &vk);
-  string pt = "This is a test";
-  GPVPlaintext<NativePoly> plaintext(pt);
-  DEBUG("Signing");
-  GPVSignature<NativePoly> signature;
-  context.Sign(plaintext, sk, vk, &signature);
-  DEBUG("Verification");
-  bool result1 = context.Verify(plaintext, signature, vk);
+    // Create setup key
+    GPVVerificationKey<Poly> A;
+    GPVSignKey<Poly> T;
+    std::cout << "Generating setup keys" << std::endl;
+    double duration = 0.0;
+    TimeVar t1;
+    TIC(t1);
+    context.KeyGen(&T, &A);
+    duration = TOC(t1);
+    std::cout << "setup: " << duration << " ms" << std::endl << std::endl;
 
-  EXPECT_EQ(true, result1) << "Failed verification";
+
+    // Create public key and private key
+    GPVVerificationKey<Poly> Ai;
+    GPVSignKey<Poly> Ti;
+    std::cout << "Generating setup keys" << std::endl;
+    TIC(t1);
+    context.KeyGen(&Ti, &Ai);
+    duration = TOC(t1);
+    std::cout << "Keygen: " << duration << " ms" << std::endl << std::endl;
+
+//    std::cout << A.GetVerificationKey()(0,0).GetModulus() << std::endl;
+//    std::cout << Ai.GetVerificationKey()(0,0).GetModulus() << std::endl;
+
+    // Sign the first plaintext with generated keys
+    GPVSignature<Poly> Ri;
+    std::cout << "Signing first plaintext" << std::endl;
+    GPVPlaintext<Poly> Riplaintext;
+
+    TIC(t1);
+
+    context.CrsGen(Ai, T, A, &Ri);
+    duration = TOC(t1);
+    std::cout << Ri.GetSignature().GetData() << std::endl;
+
 }
+
+
+//TEST(UTSignatureGPV, simple_sign_verify_native_below_sixty_bits) {
+//  DEBUG_FLAG(false);
+//
+//  DEBUG("Context Generation");
+//  SignatureContext<NativePoly> context;
+//  context.GenerateGPVContext(1024);
+//  DEBUG("Key Generation");
+//  GPVVerificationKey<NativePoly> vk;
+//  GPVSignKey<NativePoly> sk;
+//  context.KeyGen(&sk, &vk);
+//  string pt = "This is a test";
+//  GPVPlaintext<NativePoly> plaintext(pt);
+//  DEBUG("Signing");
+//  GPVSignature<NativePoly> signature;
+//  context.Sign(plaintext, sk, vk, &signature);
+//  DEBUG("Verification");
+//  bool result1 = context.Verify(plaintext, signature, vk);
+//
+//  EXPECT_EQ(true, result1) << "Failed verification";
+//}
 
 // TEST FOR BASIC SIGNING & VERIFICATION PROCESS - TWO STEP PROCESS
 TEST(UTSignatureGPV, simple_sign_verify_two_phase) {

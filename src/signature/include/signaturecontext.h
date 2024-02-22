@@ -28,7 +28,6 @@
 #include <memory>
 
 #include "gpv.h"
-
 namespace lbcrypto {
 /**
  *@brief Context class for signature schemes, including GPV
@@ -68,6 +67,10 @@ class SignatureContext {
    */
   void Sign(const LPSignPlaintext<Element>& pt, const LPSignKey<Element>& sk,
             const LPVerificationKey<Element>& vk, LPSignature<Element>* sign);
+
+    // Method for generate CRS
+  void CrsGen(const LPVerificationKey<Element>& vki, const LPSignKey<Element>& sk,
+              const LPVerificationKey<Element>& vk, LPSignature<Element>* sign);
   /**
    *@brief Method for offline phase of signing a given plaintext
    *@param pt Plaintext to be signed
@@ -101,11 +104,13 @@ class SignatureContext {
               const LPSignature<Element>& signature,
               const LPVerificationKey<Element>& vk);
 
+  shared_ptr<LPSignatureParameters<Element>> m_params;
+
  private:
   // The signature scheme used
   shared_ptr<LPSignatureScheme<Element>> m_scheme;
   // Parameters related to the scheme
-  shared_ptr<LPSignatureParameters<Element>> m_params;
+
 };
 
 }  // namespace lbcrypto

@@ -55,6 +55,9 @@ template <class Element>
 void SignatureContext<Element>::GenerateGPVContext(usint ringsize, bool VerifyNorm) {
   usint base, k;
   switch (ringsize) {
+//    case 16:
+//      k = 2;
+//      base = 8;
     case 512:
       k = 24;
       base = 8;
@@ -82,6 +85,16 @@ void SignatureContext<Element>::Sign(const LPSignPlaintext<Element>& pt,
                                      LPSignature<Element>* sign) {
   m_scheme->Sign(m_params, sk, vk, pt, sign);
 }
+
+// Method for generate CRS
+template <class Element>
+void SignatureContext<Element>::CrsGen(const LPVerificationKey<Element>& vki,
+                                       const LPSignKey<Element>& sk,
+                                       const LPVerificationKey<Element>& vk,
+                                       LPSignature<Element>* sign) {
+    m_scheme->CrsGen(m_params, sk, vk, vki, sign);
+}
+
 // Method for offline phase of signing a given plaintext
 template <class Element>
 void SignatureContext<Element>::SignOfflinePhase(

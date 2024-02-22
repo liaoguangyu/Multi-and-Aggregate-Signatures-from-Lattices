@@ -167,6 +167,13 @@ class LPSignatureScheme {
                     const LPVerificationKey<Element> &vk,
                     const LPSignPlaintext<Element> &pt,
                     LPSignature<Element> *sign);
+
+
+  virtual void CrsGen(shared_ptr<LPSignatureParameters<Element>> m_params,
+                      const LPSignKey<Element> &sk,
+                      const LPVerificationKey<Element> &vk,
+                      const LPVerificationKey<Element> &vki,
+                      LPSignature<Element> *sign);
   /**
    *Method for offline perturbation sampling
    *@param m_params parameters used for signing
