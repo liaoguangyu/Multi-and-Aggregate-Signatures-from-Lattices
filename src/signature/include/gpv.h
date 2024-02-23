@@ -181,6 +181,9 @@ class GPVSignatureParameters : public LPSignatureParameters<Element> {
    */
   usint& GetBase() { return m_base; }
 
+
+  usint& GetDimension() { return m_dimension; }
+
 /**
    *Method for accessing the base for Gadget matrix
    *
@@ -209,8 +212,8 @@ class GPVSignatureParameters : public LPSignatureParameters<Element> {
    *@param dgg DiscreteGaussianGenerator used in sampling
    */
   GPVSignatureParameters(shared_ptr<typename Element::Params> params,
-                         typename Element::DggType& dgg, usint base = 2, bool VerifyNormFlag = false)
-      : m_dgg(dgg), m_base(base) {
+                         typename Element::DggType& dgg, usint base = 2, usint dimension = 1, bool VerifyNormFlag = false)
+      : m_dgg(dgg), m_base(base), m_dimension(dimension) {
     m_params = params;
     const typename Element::Integer& q = params->GetModulus();
     size_t n = params->GetRingDimension();
@@ -238,6 +241,8 @@ class GPVSignatureParameters : public LPSignatureParameters<Element> {
   usint m_base;
   // Trapdoor length
   usint m_k;
+  // Trapdoor dimension
+  usint m_dimension;
 
   //flag for verifying norm of signature
   bool VerifyNorm;
@@ -370,6 +375,10 @@ class GPVSignatureScheme : public LPSignatureScheme<Element> {
             const LPSignKey<Element>& sk, const LPVerificationKey<Element>& vk,
             const LPSignPlaintext<Element>& pt, LPSignature<Element>* sign);
 
+  void SignMat(shared_ptr<LPSignatureParameters<Element>> m_params,
+              const LPSignKey<Element>& sk, const LPVerificationKey<Element>& vk,
+              const LPSignPlaintext<Element>& pt, LPSignature<Element>* sign);
+
   void CrsGen(shared_ptr<LPSignatureParameters<Element>> m_params,
               const LPSignKey<Element>& sk, const LPVerificationKey<Element>& vk,
               const LPVerificationKey<Element>& vki, LPSignature<Element>* sign);
@@ -431,6 +440,9 @@ class GPVSignatureScheme : public LPSignatureScheme<Element> {
    */
   void KeyGen(shared_ptr<LPSignatureParameters<Element>> m_params,
               LPSignKey<Element>* sk, LPVerificationKey<Element>* vk);
+
+  void KeyGenMat(shared_ptr<LPSignatureParameters<Element>> m_params,
+               LPSignKey<Element>* sk, LPVerificationKey<Element>* vk);
 
  private:
   std::vector<char> seed;

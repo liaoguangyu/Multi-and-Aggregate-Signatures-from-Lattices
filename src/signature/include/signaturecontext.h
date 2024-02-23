@@ -46,7 +46,7 @@ class SignatureContext {
    *@param bitwidth Desired modulus bitwidth
    *@param base Base of the gadget matrix
    */
-  void GenerateGPVContext(usint ringsize, usint bitwidth, usint base, bool VerifyNorm=false);
+  void GenerateGPVContext(usint ringsize, usint bitwidth, usint base, bool VerifyNorm=false, usint dimension = 1);
   /**
    *@brief Method for setting up a GPV context with desired ring size only
    *@param ringsize Desired ring size
@@ -67,6 +67,9 @@ class SignatureContext {
    */
   void Sign(const LPSignPlaintext<Element>& pt, const LPSignKey<Element>& sk,
             const LPVerificationKey<Element>& vk, LPSignature<Element>* sign);
+
+  void SignMat(const LPSignPlaintext<Element>& pt, const LPSignKey<Element>& sk,
+               const LPVerificationKey<Element>& vk, LPSignature<Element>* sign);
 
     // Method for generate CRS
   void CrsGen(const LPVerificationKey<Element>& vki, const LPSignKey<Element>& sk,

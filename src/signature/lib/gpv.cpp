@@ -75,6 +75,51 @@ void GPVSignatureScheme<Element>::KeyGen(
   }
 }
 
+
+// Method for generating signing and verification keys
+template <class Element>
+void GPVSignatureScheme<Element>::KeyGenMat(
+        shared_ptr<LPSignatureParameters<Element>> sparams, LPSignKey<Element> *sk,
+        LPVerificationKey<Element> *vk) {
+        auto *signKey = static_cast<GPVSignKey<Element> *>(sk);
+        auto *verificationKey = static_cast<GPVVerificationKey<Element> *>(vk);
+        auto m_params =
+                std::static_pointer_cast<GPVSignatureParameters<Element>>(sparams);
+        // Get parameters from keys
+        shared_ptr<typename Element::Params> params = m_params->GetILParams();
+        auto stddev = m_params->GetDiscreteGaussianGenerator().GetStd();
+        usint base = m_params->GetBase();
+        usint dimension = m_params->GetDimension();
+
+
+        // Generate trapdoor based using parameters and
+        std::pair<Matrix<Element>, RLWETrapdoorPair<Element>> keyPair = RLWETrapdoorUtility<Element>::TrapdoorGenSquareMat(params, stddev, dimension, base);
+        // Format of vectors are changed to prevent complications in calculations
+        keyPair.second.m_e.SetFormat(Format::EVALUATION);
+        keyPair.second.m_r.SetFormat(Format::EVALUATION);
+        keyPair.first.SetFormat(Format::EVALUATION);
+
+        // Verification key will be set to the uniformly sampled matrix used in
+        // trapdoor
+        verificationKey->SetVerificationKey(
+                std::make_shared<Matrix<Element>>(keyPair.first));
+
+        // Signing key will contain public key matrix of the trapdoor and the trapdoor
+        // matrices
+        signKey->SetSignKey(
+                std::make_shared<RLWETrapdoorPair<Element>>(keyPair.second));
+        size_t n = params->GetRingDimension();
+        if (n > 32) {
+            for (size_t i = 0; i < n - 32; i = i + 4) {
+                int rand = (PseudoRandomNumberGenerator::GetPRNG())();
+                seed.push_back((rand >> 24) & 0xFF);
+                seed.push_back((rand >> 16) & 0xFF);
+                seed.push_back((rand >> 8) & 0xFF);
+                seed.push_back((rand)&0xFF);
+            }
+        }
+}
+
 // Method for signing given object
 template <class Element>
 void GPVSignatureScheme<Element>::Sign(
@@ -124,6 +169,57 @@ void GPVSignatureScheme<Element>::Sign(
   Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSamp(
       n, k, A, T, u, dgg, dggLargeSigma, base);
   signatureText->SetSignature(std::make_shared<Matrix<Element>>(zHat));
+}
+
+// Method for signing given object
+template <class Element>
+void GPVSignatureScheme<Element>::SignMat(
+        shared_ptr<LPSignatureParameters<Element>> sparams,
+        const LPSignKey<Element> &sk, const LPVerificationKey<Element> &vk,
+        const LPSignPlaintext<Element> &pt, LPSignature<Element> *sign) {
+        auto m_params =
+                std::static_pointer_cast<GPVSignatureParameters<Element>>(sparams);
+        const auto &signKey = static_cast<const GPVSignKey<Element> &>(sk);
+        const auto &verificationKey = static_cast<const GPVVerificationKey<Element> &>(vk);
+        const auto &plainText = static_cast<const GPVPlaintext<Element> &>(pt);
+        auto *signatureText = static_cast<GPVSignature<Element> *>(sign);
+
+        // Getting parameters for calculations
+        size_t n = m_params->GetILParams()->GetRingDimension();
+        size_t k = m_params->GetK();
+        size_t base = m_params->GetBase();
+
+        EncodingParams ep(
+                std::make_shared<EncodingParamsImpl>(PlaintextModulus(512)));
+
+        // Encode the text into a vector so it can be used in signing process. TODO:
+        // Adding some kind of digestion algorithm
+        vector<int64_t> digest;
+        HashUtil::Hash(plainText.GetPlaintext(), SHA_256, digest);
+        //std::cout << digest << std::endl;
+        if (plainText.GetPlaintext().size() <= n) {
+            for (size_t i = 0; i < n - 32; i = i + 4) digest.push_back(seed[i]);
+        }
+        //std::cout << digest << std::endl;
+        Plaintext hashedText(std::make_shared<CoefPackedEncoding>(
+                m_params->GetILParams(), ep, digest));
+        hashedText->Encode();
+
+        Element &u = hashedText->GetElement<Element>();
+        u.SwitchFormat();
+        //std::cout << u << std::endl;
+        // Getting the trapdoor, its public matrix, perturbation matrix and gaussian
+        // generator to use in sampling
+        const Matrix<Element> &A = verificationKey.GetVerificationKey();
+        const RLWETrapdoorPair<Element> &T = signKey.GetSignKey();
+        //std::cout << A.GetData() << std::endl;
+        typename Element::DggType &dgg = m_params->GetDiscreteGaussianGenerator();
+
+        typename Element::DggType &dggLargeSigma =
+                m_params->GetDiscreteGaussianGeneratorLargeSigma();
+        Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSamp(
+                n, k, A, T, u, dgg, dggLargeSigma, base);
+        signatureText->SetSignature(std::make_shared<Matrix<Element>>(zHat));
 }
 
 

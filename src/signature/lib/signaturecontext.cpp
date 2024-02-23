@@ -27,7 +27,7 @@ namespace lbcrypto {
 // Method for setting up a GPV context with specific parameters
 template <class Element>
 void SignatureContext<Element>::GenerateGPVContext(usint ringsize, usint bits,
-                                                   usint base, bool VerifyNorm) {
+                                                   usint base, bool VerifyNorm, usint dimension) {
   usint sm = ringsize * 2;
   double stddev = SIGMA;
   typename Element::DggType dgg(stddev);
@@ -47,13 +47,13 @@ void SignatureContext<Element>::GenerateGPVContext(usint ringsize, usint bits,
   auto silparams =
       std::make_shared<ILParamsImpl<typename Element::Integer>>(ilParams);
   m_params =
-      std::make_shared<GPVSignatureParameters<Element>>(silparams, dgg, base, VerifyNorm);
+      std::make_shared<GPVSignatureParameters<Element>>(silparams, dgg, base, dimension, VerifyNorm);
   m_scheme = std::make_shared<GPVSignatureScheme<Element>>();
 }
 // Method for setting up a GPV context with desired security level only
 template <class Element>
 void SignatureContext<Element>::GenerateGPVContext(usint ringsize, bool VerifyNorm) {
-  usint base, k;
+  usint base, k, dimension;
   switch (ringsize) {
 //    case 16:
 //      k = 2;
@@ -61,15 +61,18 @@ void SignatureContext<Element>::GenerateGPVContext(usint ringsize, bool VerifyNo
     case 512:
       k = 24;
       base = 8;
+      dimension = 4;
+      GenerateGPVContext(ringsize, k, base, VerifyNorm, dimension);
       break;
     case 1024:
       k = 27;
       base = 64;
+      GenerateGPVContext(ringsize, k, base, VerifyNorm);
       break;
     default:
       PALISADE_THROW(config_error, "Unknown ringsize");
   }
-  GenerateGPVContext(ringsize, k, base, VerifyNorm);
+
 }
 // Method for key generation
 template <class Element>
@@ -77,6 +80,7 @@ void SignatureContext<Element>::KeyGen(LPSignKey<Element>* sk,
                                        LPVerificationKey<Element>* vk) {
   m_scheme->KeyGen(m_params, sk, vk);
 }
+
 // Method for signing a given plaintext
 template <class Element>
 void SignatureContext<Element>::Sign(const LPSignPlaintext<Element>& pt,
@@ -84,6 +88,15 @@ void SignatureContext<Element>::Sign(const LPSignPlaintext<Element>& pt,
                                      const LPVerificationKey<Element>& vk,
                                      LPSignature<Element>* sign) {
   m_scheme->Sign(m_params, sk, vk, pt, sign);
+}
+
+// Method for signing a given plaintext
+template <class Element>
+void SignatureContext<Element>::SignMat(const LPSignPlaintext<Element>& pt,
+                                     const LPSignKey<Element>& sk,
+                                     const LPVerificationKey<Element>& vk,
+                                     LPSignature<Element>* sign) {
+    m_scheme->Sign(m_params, sk, vk, pt, sign);
 }
 
 // Method for generate CRS
