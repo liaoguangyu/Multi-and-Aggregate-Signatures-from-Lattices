@@ -154,10 +154,6 @@ class LPSignatureScheme {
    */
   virtual void KeyGen(shared_ptr<LPSignatureParameters<Element>> m_params,
                       LPSignKey<Element> *sk, LPVerificationKey<Element> *vk);
-
-
-  virtual void KeyGenMat(shared_ptr<LPSignatureParameters<Element>> m_params,
-                        LPSignKey<Element> *sk, LPVerificationKey<Element> *vk);
   /**
    * @brief Method for signing
    * @param m_params Parameters used for the scheme

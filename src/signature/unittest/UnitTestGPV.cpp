@@ -104,48 +104,6 @@ TEST(UTSignatureGPV, key_homomorphic_signatures_from_GPV_trapdoors) {
     std::cout << result << std::endl;
 }
 
-// TEST Key-homomorphic signatures from GPV trapdoors square matrix
-TEST(UTSignatureGPV, key_homomorphic_signatures_from_GPV_trapdoors_square_matrix) {
-    std::cout << "This is a demo file of the GPV signature scheme" << std::endl
-              << std::endl;
-    // We generate a signature context and make it a GPV context with ring size,
-    // you can also explicitly define ringsize, modulus bitwidth and base
-    SignatureContext<Poly> context;
-    usint ringsize = 512;
-    std::cout << "Used ring size for calculations: " << ringsize << std::endl;
-    std::cout << "Generating context for GPV signature" << std::endl << std::endl;
-    context.GenerateGPVContext(ringsize, true);//todo:add verifyparameter
-
-    // define plaintext
-    GPVPlaintext<Poly> plaintext;
-    string pt1 = "This is a test";
-    plaintext.SetPlaintext(pt1);
-
-    // Create setup key
-    GPVVerificationKey<Poly> A;
-    GPVSignKey<Poly> T;
-    context.KeyGen(&T, &A);
-
-    // User 1 : Create public key and private key
-    GPVVerificationKey<Poly> A_1;
-    GPVSignKey<Poly> T_1;
-    context.KeyGen(&T_1, &A_1);
-
-    // User 1 : presign
-    GPVSignature<Poly> R_1;
-    context.CrsGen(A_1, T, A, &R_1);
-
-    // User 1 : sign
-    GPVSignature<Poly> Sigma_1_Hat, Sigma_1;
-    context.Sign(plaintext, T_1, A_1, &Sigma_1_Hat);
-    Matrix<Poly> Sigma_1_Matrix = R_1.GetSignature().Mult(Sigma_1_Hat.GetSignature());
-    Sigma_1.SetSignature(std::make_shared<Matrix<Poly>>(Sigma_1_Matrix));
-
-    // verify
-    bool result = context.Verify(plaintext, Sigma_1, A);
-    std::cout << result << std::endl;
-}
-
 // TEST  lattice-based non-interactive multi-signature
 TEST(UTSignatureGPV, lattice_based_non_interactive_multi_signature) {
     std::cout << "This is a demo file of the GPV signature scheme" << std::endl
@@ -223,6 +181,56 @@ TEST(UTSignatureGPV, lattice_based_non_interactive_multi_signature) {
     std::cout << result << std::endl;
 
 }
+
+// TEST Key-homomorphic signatures from GPV trapdoors square matrix
+TEST(UTSignatureGPV, key_homomorphic_signatures_from_GPV_trapdoors_square_matrix) {
+    std::cout << "This is a demo file of the GPV signature scheme" << std::endl
+              << std::endl;
+    // We generate a signature context and make it a GPV context with ring size,
+    // you can also explicitly define ringsize, modulus bitwidth and base
+    SignatureContext<Poly> context;
+    usint ringsize = 512;
+    std::cout << "Used ring size for calculations: " << ringsize << std::endl;
+    std::cout << "Generating context for GPV signature" << std::endl << std::endl;
+    context.GenerateGPVContext(ringsize, true);//todo:add verifyparameter
+
+    // define plaintext
+    GPVPlaintext<Poly> plaintext;
+    string pt1 = "This is a test";
+    plaintext.SetPlaintext(pt1);
+
+    // Create setup key
+    GPVVerificationKey<Poly> A;
+    GPVSignKey<Poly> T;
+    context.KeyGen(&T, &A);
+
+    // User 1 : Create public key and private key
+    GPVVerificationKey<Poly> A_1;
+    GPVSignKey<Poly> T_1;
+    context.KeyGen(&T_1, &A_1);
+
+//    std::cout << A.GetVerificationKey().GetRows() << std::endl;
+//    std::cout << A.GetVerificationKey().GetCols() << std::endl;
+//    std::cout << T.GetSignKey().m_r.GetRows() << std::endl;
+//    std::cout << T.GetSignKey().m_r.GetCols() << std::endl;
+
+
+    // User 1 : presign
+    GPVSignature<Poly> R_1;
+    context.CrsGen(A_1, T, A, &R_1);
+
+    // User 1 : sign
+    GPVSignature<Poly> Sigma_1_Hat, Sigma_1;
+    context.Sign(plaintext, T_1, A_1, &Sigma_1_Hat);
+    Matrix<Poly> Sigma_1_Matrix = R_1.GetSignature().Mult(Sigma_1_Hat.GetSignature());
+    Sigma_1.SetSignature(std::make_shared<Matrix<Poly>>(Sigma_1_Matrix));
+
+    // verify
+    bool result = context.Verify(plaintext, Sigma_1, A);
+    std::cout << result << std::endl;
+}
+
+
 
 
 //TEST(UTSignatureGPV, simple_sign_verify_native_below_sixty_bits) {

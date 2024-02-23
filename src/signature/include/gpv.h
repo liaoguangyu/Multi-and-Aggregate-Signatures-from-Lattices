@@ -441,9 +441,6 @@ class GPVSignatureScheme : public LPSignatureScheme<Element> {
   void KeyGen(shared_ptr<LPSignatureParameters<Element>> m_params,
               LPSignKey<Element>* sk, LPVerificationKey<Element>* vk);
 
-  void KeyGenMat(shared_ptr<LPSignatureParameters<Element>> m_params,
-               LPSignKey<Element>* sk, LPVerificationKey<Element>* vk);
-
  private:
   std::vector<char> seed;
   /*

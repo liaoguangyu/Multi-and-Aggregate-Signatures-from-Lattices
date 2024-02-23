@@ -46,23 +46,45 @@ void GPVSignatureScheme<Element>::KeyGen(
   shared_ptr<typename Element::Params> params = m_params->GetILParams();
   auto stddev = m_params->GetDiscreteGaussianGenerator().GetStd();
   usint base = m_params->GetBase();
+  usint dimension = m_params->GetDimension();
+  //std::cout << dimension << std::endl;
 
   // Generate trapdoor based using parameters and
-  std::pair<Matrix<Element>, RLWETrapdoorPair<Element>> keyPair = RLWETrapdoorUtility<Element>::TrapdoorGen(params, stddev, base);
-  // Format of vectors are changed to prevent complications in calculations
-  keyPair.second.m_e.SetFormat(Format::EVALUATION);
-  keyPair.second.m_r.SetFormat(Format::EVALUATION);
-  keyPair.first.SetFormat(Format::EVALUATION);
+  if (dimension == 1) {
+      std::pair<Matrix<Element>, RLWETrapdoorPair<Element>> keyPair = RLWETrapdoorUtility<Element>::TrapdoorGen(params, stddev, base);
+      //std::cout << dimension << std::endl;
+      keyPair.second.m_e.SetFormat(Format::EVALUATION);
+      keyPair.second.m_r.SetFormat(Format::EVALUATION);
+      keyPair.first.SetFormat(Format::EVALUATION);
 
-  // Verification key will be set to the uniformly sampled matrix used in
-  // trapdoor
-  verificationKey->SetVerificationKey(
-      std::make_shared<Matrix<Element>>(keyPair.first));
+      // Verification key will be set to the uniformly sampled matrix used in
+      // trapdoor
+      verificationKey->SetVerificationKey(
+              std::make_shared<Matrix<Element>>(keyPair.first));
 
-  // Signing key will contain public key matrix of the trapdoor and the trapdoor
-  // matrices
-  signKey->SetSignKey(
-      std::make_shared<RLWETrapdoorPair<Element>>(keyPair.second));
+      // Signing key will contain public key matrix of the trapdoor and the trapdoor
+      // matrices
+      signKey->SetSignKey(
+              std::make_shared<RLWETrapdoorPair<Element>>(keyPair.second));
+  } else {
+      //keyPair = RLWETrapdoorUtility<Element>::TrapdoorGenSquareMat(params, stddev, dimension, base);
+      std::pair<Matrix<Element>, RLWETrapdoorPair<Element>> keyPair = RLWETrapdoorUtility<Element>::TrapdoorGenSquareMat(params, stddev, dimension, base);
+      keyPair.second.m_e.SetFormat(Format::EVALUATION);
+      keyPair.second.m_r.SetFormat(Format::EVALUATION);
+      keyPair.first.SetFormat(Format::EVALUATION);
+
+      // Verification key will be set to the uniformly sampled matrix used in
+      // trapdoor
+      verificationKey->SetVerificationKey(
+              std::make_shared<Matrix<Element>>(keyPair.first));
+
+      // Signing key will contain public key matrix of the trapdoor and the trapdoor
+      // matrices
+      signKey->SetSignKey(
+              std::make_shared<RLWETrapdoorPair<Element>>(keyPair.second));
+  }
+    // Format of vectors are changed to prevent complications in calculations
+
   size_t n = params->GetRingDimension();
   if (n > 32) {
     for (size_t i = 0; i < n - 32; i = i + 4) {
@@ -73,51 +95,6 @@ void GPVSignatureScheme<Element>::KeyGen(
       seed.push_back((rand)&0xFF);
     }
   }
-}
-
-
-// Method for generating signing and verification keys
-template <class Element>
-void GPVSignatureScheme<Element>::KeyGenMat(
-        shared_ptr<LPSignatureParameters<Element>> sparams, LPSignKey<Element> *sk,
-        LPVerificationKey<Element> *vk) {
-        auto *signKey = static_cast<GPVSignKey<Element> *>(sk);
-        auto *verificationKey = static_cast<GPVVerificationKey<Element> *>(vk);
-        auto m_params =
-                std::static_pointer_cast<GPVSignatureParameters<Element>>(sparams);
-        // Get parameters from keys
-        shared_ptr<typename Element::Params> params = m_params->GetILParams();
-        auto stddev = m_params->GetDiscreteGaussianGenerator().GetStd();
-        usint base = m_params->GetBase();
-        usint dimension = m_params->GetDimension();
-
-
-        // Generate trapdoor based using parameters and
-        std::pair<Matrix<Element>, RLWETrapdoorPair<Element>> keyPair = RLWETrapdoorUtility<Element>::TrapdoorGenSquareMat(params, stddev, dimension, base);
-        // Format of vectors are changed to prevent complications in calculations
-        keyPair.second.m_e.SetFormat(Format::EVALUATION);
-        keyPair.second.m_r.SetFormat(Format::EVALUATION);
-        keyPair.first.SetFormat(Format::EVALUATION);
-
-        // Verification key will be set to the uniformly sampled matrix used in
-        // trapdoor
-        verificationKey->SetVerificationKey(
-                std::make_shared<Matrix<Element>>(keyPair.first));
-
-        // Signing key will contain public key matrix of the trapdoor and the trapdoor
-        // matrices
-        signKey->SetSignKey(
-                std::make_shared<RLWETrapdoorPair<Element>>(keyPair.second));
-        size_t n = params->GetRingDimension();
-        if (n > 32) {
-            for (size_t i = 0; i < n - 32; i = i + 4) {
-                int rand = (PseudoRandomNumberGenerator::GetPRNG())();
-                seed.push_back((rand >> 24) & 0xFF);
-                seed.push_back((rand >> 16) & 0xFF);
-                seed.push_back((rand >> 8) & 0xFF);
-                seed.push_back((rand)&0xFF);
-            }
-        }
 }
 
 // Method for signing given object
@@ -255,7 +232,13 @@ void GPVSignatureScheme<Element>::CrsGen(
         typename Element::DggType &dggLargeSigma =
                 m_params->GetDiscreteGaussianGeneratorLargeSigma();
 
-        Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSampMatrix(n, k, A, T, Ai, dgg, dggLargeSigma, base);
+        Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSamp(n, k, A, T, Ai(0, 0), dgg, dggLargeSigma, base);
+        for (size_t col = 1; col < k + 2; col++){
+            Matrix<Element> zHat_col = RLWETrapdoorUtility<Element>::GaussSamp(n, k, A, T, Ai(0, col), dgg, dggLargeSigma, base);
+            zHat.HStack(zHat_col);
+        }
+
+        //Matrix<Element> zHat = RLWETrapdoorUtility<Element>::GaussSampMatrix(n, k, A, T, Ai, dgg, dggLargeSigma, base);
         //‘const lbcrypto::Matrix<lbcrypto::PolyImpl<bigintnat::NativeVector<bigintnat::NativeIntegerT<long unsigned int> > > >’ to
         //‘const lbcrypto::Matrix<lbcrypto::PolyImpl<bigintfxd::BigVectorImpl<bigintfxd::BigInteger<unsigned int, 3500> > > >&’
         signatureText->SetSignature(std::make_shared<Matrix<Element>>(zHat));
