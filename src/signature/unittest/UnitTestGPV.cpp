@@ -293,7 +293,7 @@ TEST(UTSignatureGPV, lattice_based_non_interactive_multi_signature_square_matrix
     Matrix<Poly> Sigma_2_Matrix = R_2.GetSignature().Mult(Sigma_2_Hat.GetSignature());
     Sigma_2.SetSignature(std::make_shared<Matrix<Poly>>(Sigma_2_Matrix));
 
-    // uniform_alloc
+    // uniform_alloc define
     shared_ptr<typename Poly ::Params> params =
             std::static_pointer_cast<GPVSignatureParameters<Poly>>(context.m_params)->GetILParams();
     auto uniform_alloc = Poly::MakeDiscreteUniformAllocator(params, EVALUATION);
@@ -302,7 +302,6 @@ TEST(UTSignatureGPV, lattice_based_non_interactive_multi_signature_square_matrix
 
     // aggregation
     Matrix<Poly> omega_all(zero_alloc, 5, 5, uniform_alloc);
-    //std::cout << omega_all.GetData() << std::endl;
     //
     Matrix<Poly> s1 = Sigma_1_Matrix.ScalarMult(omega_all(1,1));
     Matrix<Poly> s2 = Sigma_2_Matrix.ScalarMult(omega_all(2,2));
@@ -310,15 +309,13 @@ TEST(UTSignatureGPV, lattice_based_non_interactive_multi_signature_square_matrix
     GPVSignature<Poly> Sigma_Alpha;
     Sigma_Alpha.SetSignature(std::make_shared<Matrix<Poly>>(Sigma_Alpha_Matrix));
 
-
-//    std::cout << Sigma_1_Alpha.GetRows() << std::endl;
-//    std::cout << Sigma_1_Alpha.GetCols() << std::endl;
-
-    // std::cout << SigmaIMatrix.GetData() << std::endl;
-
+    // verify
     bool result = context.VerifyMulti(plaintext, Sigma_Alpha, A, omega_all);
-    std::cout << result << std::endl;
-
+    bool result1 = context.Verify(plaintext, Sigma_1, A);
+    bool result2 = context.Verify(plaintext, Sigma_2, A);
+    std::cout << "User1 signature test: " << result1 << std::endl;
+    std::cout << "User1 signature test: " << result2 << std::endl;
+    std::cout << "multi-signature test: " << result << std::endl;
 }
 
 

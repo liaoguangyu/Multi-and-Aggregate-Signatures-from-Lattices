@@ -358,6 +358,7 @@ bool GPVSignatureScheme<Element>::Verify(
 
   size_t k = m_params->GetK();
   size_t base = m_params->GetBase();
+  size_t dimension = m_params->GetDimension();
   bool VerifyNorm = m_params->GetVerifyNormFlag();
 
   
@@ -385,10 +386,16 @@ bool GPVSignatureScheme<Element>::Verify(
   const Matrix<Element> &A = verificationKey.GetVerificationKey();
   Matrix<Element> z = signatureText.GetSignature();
 
-  Matrix<Element> U = A.ExtractCol(0);
-  U.Fill(u);
-  // Check the verified vector is actually the encoding of the object
-  bool signatureCheck = U.Equal(A.Mult(z));
+
+  bool signatureCheck;
+  if (dimension == 1){
+      signatureCheck = (u == (A * z)(0, 0));
+  } else {
+      Matrix<Element> U = A.ExtractCol(0);
+      U.Fill(u);
+      // Check the verified vector is actually the encoding of the object
+      signatureCheck = U.Equal(A.Mult(z));
+  }
 
   if (VerifyNorm == true) {
 
@@ -432,6 +439,7 @@ bool GPVSignatureScheme<Element>::VerifyMulti(
 
         size_t k = m_params->GetK();
         size_t base = m_params->GetBase();
+        size_t dimension = m_params->GetDimension();
         bool VerifyNorm = m_params->GetVerifyNormFlag();
 
 
@@ -454,8 +462,6 @@ bool GPVSignatureScheme<Element>::VerifyMulti(
 
         Element &u = hashedText->GetElement<Element>();
         u.SwitchFormat();
-
-        Element u_weight = u * (weight(1,1) + weight(2,2));
         //u_weight.SwitchFormat();
         //std::cout << u_weight << std::endl;
 
@@ -465,8 +471,25 @@ bool GPVSignatureScheme<Element>::VerifyMulti(
         Matrix<Element> z = signatureText.GetSignature();
         //std::cout << (A * z)(0, 0) << std::endl;
 
+        // TODO: only two add to \rho
+        Element u_weight;
+        Matrix<Element> U, U_weight;
+
+        if (dimension == 1){
+            u_weight = u * (weight(1, 1) + weight(2, 2));
+        } else {
+            U = A.ExtractCol(0);
+            U.Fill(u);
+            U_weight = U.ScalarMult(weight(1, 1) + weight(2, 2));
+        }
+
         // Check the verified vector is actually the encoding of the object
-        bool signatureCheck = (u_weight == (A * z)(0, 0));
+        bool signatureCheck;
+        if (dimension == 1){
+            signatureCheck = (u_weight == (A * z)(0, 0));
+        } else {
+            signatureCheck = U_weight.Equal(A.Mult(z));
+        }
 
         if (VerifyNorm == true) {
 
